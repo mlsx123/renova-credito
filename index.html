@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finder PRO - Consulta de CPF</title> 
+    
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.5.2/css/all.css" 
+          crossorigin="anonymous">
+
+    <style>
+        /* --- ESQUEMA DE CORES DARK MODE --- */
+        :root {
+            --cor-primaria: #00bcd4; /* Ciano chamativo (Acento) */
+            --cor-secundaria: #4CAF50; /* Verde forte */
+            --cor-fundo: #121212; /* Fundo principal escuro */
+            --cor-cartao: #1E1E1E; /* Cor de fundo de cards */
+            --cor-texto: #E0E0E0; /* Texto claro */
+            --cor-texto-sec: #B0B0B0; /* Texto secundário */
+            --cor-sucesso: #4CAF50;
+            --cor-erro: #F44336;
+            --cor-aviso: #FFC107;
+            --sombra-leve: 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* --- BASE MOBILE-FIRST --- */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: var(--cor-fundo);
+            color: var(--cor-texto);
+            line-height: 1.6;
+            padding-bottom: 70px; /* Espaço para o rodapé fixo */
+        }
+
+        .container {
+            padding: 15px;
+            max-width: 600px;
+            margin: auto;
+        }
+
+        /* --- HEADER (BARRA SUPERIOR) --- */
+        .header {
+            background-color: var(--cor-cartao); /* Barra escura */
+            color: var(--cor-texto);
+            padding: 15px;
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            box-shadow: var(--sombra-leve);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .header .logo { 
+            height: 30px; 
+            margin-right: 10px;
+            vertical-align: middle;
+            filter: invert(70%) sepia(100%) saturate(1000%) hue-rotate(150deg) brightness(100%) contrast(100%); 
+        }
+
+        .header h1 {
+            font-size: 1.4rem; 
+            margin: 0;
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            color: var(--cor-primaria); 
+        }
+        
+        /* --- FORMULÁRIO e CAMPOS --- */
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--cor-primaria);
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            box-sizing: border-box;
+            border: 1px solid #333;
+            border-radius: 6px;
+            font-size: 16px;
+            background-color: #2C2C2C; 
+            color: var(--cor-texto);
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        
+        input[type="text"]:focus {
+             border-color: var(--cor-primaria);
+             box-shadow: 0 0 5px rgba(0, 188, 212, 0.5);
+        }
+        
+        .btn-submit {
+            background-color: var(--cor-secundaria);
+            color: var(--cor-cartao); 
+            padding: 14px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1.1rem;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+        
+        .btn-submit[disabled] {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-submit:hover:not([disabled]) {
+            background-color: #388E3C; 
+            transform: translateY(-1px);
+        }
+
+        /* --- RESULTADOS --- */
+        #results-area h3 {
+             margin-top: 30px;
+             color: var(--cor-primaria);
+             border-bottom: 2px solid var(--cor-primaria);
+             padding-bottom: 5px;
+        }
+        
+        .resultado-box {
+            border: 1px solid #333;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 8px;
+            background-color: var(--cor-cartao);
+            box-shadow: var(--sombra-leve);
+        }
+
+        .cpf-header {
+            font-weight: bold;
+            color: var(--cor-primaria);
+            border-bottom: 1px solid #444;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+            font-size: 1.1rem;
+        }
+        
+        /* Status com Ícone */
+        .status-line {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .status-line .icon {
+            font-size: 1.3em;
+            margin-right: 8px;
+        }
+
+        .status-sucesso { color: var(--cor-sucesso); }
+        .status-falha { color: var(--cor-erro); }
+        
+        /* Estilização dos ícones de campo */
+        .resultado-box .campo-icon {
+            color: var(--cor-primaria); /* Cor do ícone */
+            margin-right: 6px;
+            width: 18px; /* Largura fixa para alinhamento */
+            text-align: center;
+        }
+        
+        .label-campo { 
+            font-weight: 400; 
+            color: var(--cor-texto-sec);
+            display: inline-block;
+            min-width: 60px; /* Garante que o rótulo tenha um espaço mínimo */
+        }
+        
+        .resultado-box p { 
+            margin: 5px 0;
+            display: flex;
+            align-items: center; /* Alinha o ícone e o texto verticalmente */
+        }
+        .resultado-box p span.status-sucesso { display: block; margin-left: 0; }
+
+
+        /* Alertas */
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .alert-error { 
+            color: white; 
+            background-color: var(--cor-erro); 
+        }
+        .alert-warning { 
+            color: var(--cor-cartao); 
+            background-color: var(--cor-aviso); 
+        }
+        
+        /* --- NOVO RODAPÉ (FOOTER) --- */
+        .footer {
+            background-color: #1a1a1a; /* Cor escura para o rodapé */
+            color: var(--cor-texto-sec);
+            padding: 15px;
+            text-align: center;
+            font-size: 0.9em;
+            border-top: 2px solid var(--cor-primaria); /* Linha de destaque */
+            position: fixed; /* Fixa o rodapé na parte inferior */
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            box-sizing: border-box;
+            z-index: 40;
+        }
+
+        .footer .welcome-msg {
+            color: var(--cor-primaria);
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .footer .contact-links a {
+            color: var(--cor-texto); /* Cor de texto padrão para links */
+            text-decoration: none;
+            margin: 0 8px;
+            transition: color 0.3s;
+        }
+
+        /* Cores específicas para os ícones */
+        .footer .contact-links .fa-telegram { color: #0088cc; }
+        .footer .contact-links .fa-instagram { color: #E4405F; }
+        .footer .contact-links .fa-whatsapp { color: #25D366; }
+
+        .footer .contact-links a:hover {
+            color: var(--cor-primaria);
+        }
+
+        .footer .disclaimer {
+            color: var(--cor-erro);
+            font-size: 0.8em;
+            margin-top: 10px;
+            font-weight: 500;
+        }
+        
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <h1>
+            <img src="https://scmedia.itsfogo.com/$-$/c9d027fa591742e980b70a23e7c19346.svg" alt="Finder PRO Logo" class="logo">
+            Finder PRO
+        </h1>
+    </header>
+
+    <div class="container">
+        
+        <div id="status-message"></div>
+
+        <form id="consultaForm">
+            <input type="hidden" name="modo_consulta" id="modo_consulta" value="unitario">
+
+            <div id="unitarioMode" class="form-group">
+                <label for="cpf_unitario">Insira o CPF (Apenas números)</label>
+                <input type="text" name="cpf_unitario" id="cpf_unitario" placeholder="Ex: 12345678900" 
+                    maxlength="11" required>
+            </div>
+
+            <button type="submit" class="btn-submit">
+                CONSULTAR CPF
+            </button>
+        </form>
+
+        <div id="results-area"></div>
+    </div>
+    
+    <footer class="footer">
+        <p class="welcome-msg">Bem-vindo(a) à ferramenta Finder PRO! 🚀</p>
+        <p>Desenvolvido por Ferreira e Santos / F&A Finder Pro</p>
+        
+        <div class="contact-links">
+            <a href="https://t.me/FungYUSn" target="_blank" title="Telegram">
+                <i class="fab fa-telegram"></i> t.me/FungYUSn
+            </a>
+            <a href="https://instagram.com/_mikaelf7" target="_blank" title="Instagram">
+                <i class="fab fa-instagram"></i> @_mikaelf7
+            </a>
+            <a href="https://wa.me/5588988751030" target="_blank" title="WhatsApp">
+                <i class="fab fa-whatsapp"></i> (88) 98875-1030
+            </a>
+        </div>
+        
+        <p class="disclaimer">⚠️ AVISO DE RESPONSABILIDADE: O usuário é o único e total responsável pelo uso das informações obtidas nesta ferramenta. Use com ética e responsabilidade.</p>
+    </footer>
+
+    <script>
+        // NOVIDADE: O map_campos agora inclui o nome em Português (pt) e o ícone (icon)
+        const map_campos = {
+            'zipcode': { pt: 'CEP', icon: 'fas fa-map-pin' },
+            'street': { pt: 'Rua', icon: 'fas fa-road' },
+            'number': { pt: 'Número', icon: 'fas fa-hashtag' },
+            'neighborhood': { pt: 'Bairro', icon: 'fas fa-house-chimney' },
+            'city': { pt: 'Cidade', icon: 'fas fa-city' },
+            'state': { pt: 'Estado', icon: 'fas fa-flag' }
+        };
+
+        const API_URL = 'processa_consulta.php';
+        
+        const submitButton = document.querySelector(".btn-submit");
+        const form = document.getElementById("consultaForm");
+        const resultsArea = document.getElementById("results-area");
+        const statusMessage = document.getElementById("status-message");
+
+        // --- Funções de Mensagem e Resultados ---
+        function displayMessage(type, message) {
+            statusMessage.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+            statusMessage.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function displayResults(data) {
+            resultsArea.innerHTML = '';
+            statusMessage.innerHTML = '';
+            
+            if (data.results.length === 0) {
+                 displayMessage('error', data.error || 'Nenhum resultado válido retornado.');
+                 return;
+            }
+            
+            let html = `<h3>Resultado da Consulta</h3>`;
+
+            const item = data.results[0];
+            const isError = item.data && item.data.error;
+            const headerText = `CPF: ${item.cpf}`;
+            
+            html += `<div class="resultado-box">`;
+            html += `<p class="cpf-header">${headerText}</p>`;
+
+            if (isError) {
+                // Ícone de Falha (X vermelho)
+                html += `<p class="status-line status-falha"><span class="icon">&#x2716;</span> Status: FALHA NA CONSULTA</p>`;
+                html += `<p class="status-falha">Mensagem: ${item.data.message || 'Erro desconhecido.'}</p>`;
+            } else {
+                // Ícone de Sucesso (Check verde)
+                html += `<p class="status-line status-sucesso"><span class="icon">&#x2714;</span> Status: ENDEREÇO ENCONTRADO</p>`;
+                
+                // Itera sobre todos os campos retornados
+                for (const key in item.data) {
+                    const mapItem = map_campos[key] || { pt: key, icon: 'fas fa-info-circle' };
+                    const chave_pt = mapItem.pt; 
+                    const iconClass = mapItem.icon;
+                    
+                    // NOVIDADE: Adiciona o ícone antes do rótulo e o valor ao final
+                    html += `<p><i class="campo-icon ${iconClass}"></i> <span class="label-campo">${chave_pt}:</span> ${item.data[key]}</p>`;
+                }
+            }
+            html += `</div>`;
+            
+            html += `<p style="margin-top: 20px; font-weight: bold; text-align: center; color: var(--cor-texto-sec);">PROCESSAMENTO CONCLUÍDO</p>`;
+            resultsArea.innerHTML = html;
+        }
+
+
+        // --- Lógica de Submissão AJAX ---
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            resultsArea.innerHTML = '';
+            statusMessage.innerHTML = '';
+            submitButton.disabled = true;
+            submitButton.textContent = 'CONSULTANDO...';
+
+            try {
+                const formData = new FormData(form);
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP! Status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayResults(data);
+                } else {
+                    displayMessage('error', data.error || 'Erro desconhecido durante a consulta.');
+                }
+                
+            } catch (error) {
+                console.error('Erro na requisição:', error);
+                displayMessage('error', `Falha na comunicação com o servidor: ${error.message}.`);
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'CONSULTAR CPF';
+            }
+        });
+        
+    </script>
+
+</body>
+</html>
